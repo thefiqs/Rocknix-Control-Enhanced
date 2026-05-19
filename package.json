@@ -1,6 +1,6 @@
 {
   "name": "rocknix-control",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CPU/GPU/Fan control for ROCKNIX",
   "type": "module",
   "scripts": {

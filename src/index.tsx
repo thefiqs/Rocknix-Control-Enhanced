@@ -209,7 +209,7 @@ function Content() {
 
 
   const refreshHardware = async () => {
-    const [cpu, gpu, preset] = await Promise.all([getCpuInfo(), getGpuInfo(), getPreset(selectedPreset)]);
+    const [cpu, gpu, preset] = await Promise.all([getCpuInfo(), getGpuInfo(), getPreset(state.activePreset)]);
     setCpuInfo(cpu);
     setGpuInfo(gpu);
     const liveMax: { [key: string]: number } = {};
@@ -257,10 +257,8 @@ function Content() {
         setLiveCpuMax(liveMax);
       });
       getGpuInfo().then((gpu) => setLiveGpuMax(gpu.max_freq));
-      if (state.activePreset !== selectedPreset && !switching) {
+      if (state.activePreset !== selectedPresetRef.current && !switching) {
         setSelectedPreset(state.activePreset);
-        refreshHardware();
-        refreshFanCurve();
       }
     }, 1000);
     return () => clearInterval(interval);
@@ -268,6 +266,9 @@ function Content() {
 
   const saveRef = useRef({ editMode, cpuMaxFreqs, gpuMaxFreq, editName, selectedPreset });
   saveRef.current = { editMode, cpuMaxFreqs, gpuMaxFreq, editName, selectedPreset };
+
+  const selectedPresetRef = useRef(selectedPreset);
+  selectedPresetRef.current = selectedPreset;
 
   useEffect(() => {
     return () => {

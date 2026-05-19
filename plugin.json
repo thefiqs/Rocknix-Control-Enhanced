@@ -1,6 +1,6 @@
 {
   "name": "ROCKNIX Control",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "seilent",
   "flags": ["root"],
   "api_version": 1,
