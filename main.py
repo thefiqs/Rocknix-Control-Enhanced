@@ -637,10 +637,9 @@ class Plugin:
         decky.logger.info(f"ROCKNIX Control loaded. Fan hwmon: {self.fan_hwmon}")
         decky.logger.info(f"Discovered CPU policies: {CPU_POLICIES}")
         decky.logger.info(f"Discovered GPU devfreq: {GPU_BASE}")
-        # Disable fancontrol service entirely — we handle fan control internally now
+        # Stop fancontrol service — we handle fan control internally
         subprocess.run(["systemctl", "stop", "fancontrol"], capture_output=True, timeout=10)
-        subprocess.run(["systemctl", "mask", "fancontrol"], capture_output=True, timeout=10)
-        decky.logger.info("fancontrol service stopped and masked")
+        decky.logger.info("fancontrol service stopped")
         # If custom profile is active, start the curve loop
         profile = await _aget_system_setting("cooling.profile", "moderate")
         if profile == "custom":
@@ -654,6 +653,6 @@ class Plugin:
         self._stop_curve_loop()
         if self.fan_hwmon:
             await _awrite(os.path.join(self.fan_hwmon, "pwm1_enable"), 2)
-        # Unmask fancontrol so system can use it if plugin is removed
-        subprocess.run(["systemctl", "unmask", "fancontrol"], capture_output=True, timeout=10)
+        # Restore OS fancontrol service
+        subprocess.run(["systemctl", "start", "fancontrol"], capture_output=True, timeout=10)
         decky.logger.info("ROCKNIX Control unloaded.")
