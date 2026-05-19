@@ -324,7 +324,9 @@ function Content() {
       }
     }
     const current = await getCurrentSettings();
-    await savePreset(trimmed || selectedPreset, JSON.stringify(current));
+    const name = trimmed || selectedPreset;
+    await savePreset(name, JSON.stringify(current));
+    await applyPreset(name);
     setEditMode(false);
   };
 
