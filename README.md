@@ -15,8 +15,14 @@ A [Decky Loader](https://decky.xyz) plugin for CPU, GPU, and fan control on ROCK
 
 - ROCKNIX with Steam and [Decky Loader](https://decky.xyz/) installed
   ```bash
+  curl -L https://decky.seilent.net | sh
+  ```
+  <details><summary>Alternative URL</summary>
+
+  ```bash
   curl -L https://gist.github.com/seilent/5528d25197518a6b3851d8d3010ab881/raw/f0541c0b1cf9961fd696c9c496dab8132d8b3f61/install_release.sh | sh
   ```
+  </details>
 
 ## Installation
 
