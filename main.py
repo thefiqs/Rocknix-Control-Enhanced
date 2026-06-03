@@ -173,7 +173,7 @@ def _parse_fan_conf():
             vals = line.replace("TEMPS=(", "").rstrip(")")
             temps = [int(x) for x in vals.split()]
     if speeds and temps:
-        pairs = [(t, s) for t, s in zip(temps, speeds) if t > 0]
+        pairs = list(dict.fromkeys(zip(temps, speeds)))
         pairs.sort()
         return {"speeds": [s for t, s in pairs], "temps": [t for t, s in pairs]}
     return None
@@ -182,8 +182,13 @@ def _parse_fan_conf():
 def _write_fan_conf(speeds, temps):
     os.makedirs(os.path.dirname(FAN_CONF), exist_ok=True)
     pairs = sorted(zip(temps, speeds), reverse=True)
-    desc_temps = [t for t, s in pairs] + [0]
-    desc_speeds = [s for t, s in pairs] + [0]
+    desc_temps = [t for t, s in pairs]
+    desc_speeds = [s for t, s in pairs]
+
+    if 0 not in desc_temps:
+        desc_temps.append(0)
+        desc_speeds.append(0)
+
     content = f"SPEEDS=({' '.join(str(s) for s in desc_speeds)})\nTEMPS=({' '.join(str(t) for t in desc_temps)})\n"
     with open(FAN_CONF, "w") as f:
         f.write(content)

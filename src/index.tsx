@@ -140,7 +140,7 @@ const FanCurveEditor: FC<{
         <div key={i}>
           <PanelSectionRow>
             <SliderField
-              label={`Point ${i + 1} - Temp`}
+              label={`Point ${i} - Temp`}
               description={`${pt.temp / 1000}°C`}
               value={pt.temp}
               min={30000} max={100000} step={1000}
@@ -150,7 +150,7 @@ const FanCurveEditor: FC<{
           </PanelSectionRow>
           <PanelSectionRow>
             <SliderField
-              label={`Point ${i + 1} - Speed`}
+              label={`Point ${i} - Speed`}
               description={`PWM ${pt.speed} (${Math.round(pt.speed / 255 * 100)}%)`}
               value={pt.speed}
               min={0} max={255} step={1}
@@ -161,7 +161,7 @@ const FanCurveEditor: FC<{
           {points.length > 2 && (
             <PanelSectionRow>
               <ButtonItem layout="below" disabled={disabled} onClick={() => removePoint(i)}>
-                <FaTrash /> Remove Point {i + 1}
+                <FaTrash /> Remove Point {i}
               </ButtonItem>
             </PanelSectionRow>
           )}
