@@ -422,6 +422,14 @@ function Content() {
                 <FaPlus /> New Preset
               </ButtonItem>
             </PanelSectionRow>
+            
+            {selectedPreset !== "Default" && (
+              <PanelSectionRow>
+                <ButtonItem layout="below" onClick={handleDeletePreset}>
+                  Delete Preset
+                </ButtonItem>
+              </PanelSectionRow>
+            )}
           </>
         ) : (
           <>
@@ -434,11 +442,6 @@ function Content() {
             <PanelSectionRow>
               <ButtonItem layout="below" onClick={handleCancel}>Cancel</ButtonItem>
             </PanelSectionRow>
-            {selectedPreset !== "Default" && (
-              <PanelSectionRow>
-                <ButtonItem layout="below" onClick={handleDeletePreset}>Delete</ButtonItem>
-              </PanelSectionRow>
-            )}
           </>
         )}
       </PanelSection>

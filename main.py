@@ -512,11 +512,22 @@ class Plugin:
     async def delete_preset(self, name: str):
         if name == "Default":
             return False
+
         data = await _aload_presets()
         if name in data["presets"]:
             del data["presets"][name]
             await _asave_presets(data)
+
+            profiles = await _aload_game_profiles()
+            profiles = {
+                game_id: preset_name
+                for game_id, preset_name in profiles.items()
+                if preset_name != name
+            }
+            await _asave_game_profiles(profiles)
+
             return True
+
         return False
 
     async def apply_preset(self, name: str):
