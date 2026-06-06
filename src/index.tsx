@@ -17,7 +17,6 @@ declare const appStore: {
   GetAppOverviewByAppID: (appId: number) => { display_name: string } | null;
 };
 
-
 interface CpuPolicyInfo {
   available_frequencies: number[];
   governor: string;
@@ -36,9 +35,13 @@ interface GpuInfo {
 interface FanCurve { speeds: number[]; temps: number[]; profile: string; }
 
 interface Preset {
-  [key: string]: number | string | { speeds: number[]; temps: number[] };
-  gpu_max: number; gpu_min: number;
-  fan_mode: string; fan_pwm: number;
+  [key: string]: number | string | undefined | { speeds: number[]; temps: number[] };
+  gpu_max: number;
+  gpu_min: number;
+
+  fan_mode: string;
+  fan_pwm: number;
+  fan_pwm_percent?: number;
 }
 
 interface CurvePoint { temp: number; speed: number; }
@@ -201,6 +204,7 @@ function Content() {
   const [selectedPreset, setSelectedPreset] = useState<string>(state.activePreset);
   const [editMode, setEditMode] = useState<boolean>(false);
   const [editName, setEditName] = useState<string>("");
+  const [fanPercent, setFanPercent] = useState<string>("--");
 
   const [curvePoints, setCurvePoints] = useState<CurvePoint[]>(DEFAULT_FAN_CURVE);
 
@@ -264,6 +268,12 @@ function Content() {
         });
       });
       getGpuInfo().then((gpu) => setLiveGpuMax((prev) => (prev === gpu.max_freq ? prev : gpu.max_freq)));
+      
+      getCurrentSettings().then((current) => {
+        const value = current.fan_pwm_percent;
+        setFanPercent(typeof value === "number" ? value.toFixed(1) : "--");
+      });
+      
       if (state.activePreset !== selectedPresetRef.current && !switching) {
         setSelectedPreset(state.activePreset);
       }
@@ -402,6 +412,8 @@ function Content() {
         <PanelSection title={`Playing: ${gameName}`} />
       )}
 
+      <PanelSection title={`Fan: ${fanPercent}%`} />
+      
       <PanelSection title="Presets">
         <PanelSectionRow>
           <DropdownItem

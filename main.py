@@ -41,10 +41,23 @@ GPU_BASE = _discover_gpu_devfreq()
 
 
 def _find_fan_hwmon():
-    pattern = os.path.join(FAN_PLATFORM, "hwmon", "hwmon*")
-    for p in glob.glob(pattern):
-        if os.path.exists(os.path.join(p, "pwm1")):
-            return p
+    patterns = [
+        os.path.join(FAN_PLATFORM, "hwmon", "hwmon*"),
+        "/sys/devices/platform/pwm-fan/hwmon/hwmon*",
+        "/sys/class/hwmon/hwmon*",
+    ]
+
+    for pattern in patterns:
+        for p in glob.glob(pattern):
+            pwm = os.path.join(p, "pwm1")
+            enable = os.path.join(p, "pwm1_enable")
+            name = _read(os.path.join(p, "name")) or ""
+
+            if os.path.exists(pwm) and ("fan" in name.lower() or os.path.exists(enable)):
+                decky.logger.info(f"Found fan hwmon: {p} name={name}")
+                return p
+
+    decky.logger.warning("No fan hwmon found")
     return None
 
 
@@ -582,7 +595,10 @@ class Plugin:
                 settings["fan_mode"] = "auto"
             else:
                 settings["fan_mode"] = "manual"
-            settings["fan_pwm"] = int(await _aread(os.path.join(self.fan_hwmon, "pwm1")) or 0)
+
+            fan_pwm = int(await _aread(os.path.join(self.fan_hwmon, "pwm1")) or 0)
+            settings["fan_pwm"] = fan_pwm
+            settings["fan_pwm_percent"] = round((fan_pwm / 255) * 100, 1)
         curve = _parse_fan_conf()
         settings["fan_curve"] = curve if curve else DEFAULT_FAN_CURVE
         return settings
@@ -616,14 +632,20 @@ class Plugin:
         decky.logger.info(f"ROCKNIX Control loaded. Fan hwmon: {self.fan_hwmon}")
         decky.logger.info(f"Discovered CPU policies: {CPU_POLICIES}")
         decky.logger.info(f"Discovered GPU devfreq: {GPU_BASE}")
-        subprocess.run(["systemctl", "stop", "fancontrol"], capture_output=True, timeout=10)
-        decky.logger.info("fancontrol service stopped")
+
         profile = await _aget_system_setting("cooling.profile", "moderate")
-        if profile == "custom":
-            curve = _parse_fan_conf()
-            if curve:
-                self._fan_curve = curve
-                self._start_curve_loop()
+        curve = _parse_fan_conf() if profile == "custom" else None
+
+        if profile == "custom" and self.fan_hwmon and curve:
+            subprocess.run(["systemctl", "stop", "fancontrol"], capture_output=True, timeout=10)
+            decky.logger.info("fancontrol service stopped for custom curve")
+            self._fan_curve = curve
+            self._start_curve_loop()
+        else:
+            decky.logger.info(
+                f"native fancontrol left alone: profile={profile}, "
+                f"fan_hwmon={self.fan_hwmon}, custom_curve_valid={bool(curve)}"
+            )
 
     async def _unload(self):
         await self._stop_curve_loop()
