@@ -2,7 +2,9 @@
 
 ## Credits
 
-This project is based on the original ROCKNIX Control plugin created by <original author's name>. All credit for the original project belongs to the original author and contributors.
+This project is based on the original ROCKNIX Control plugin created by https://github.com/seilent
+
+All credit for the original project belongs to the original author and contributors.
 
 This fork focuses on additional enhancements, including per-game governor support, fan control improvements, UI refinements, and various bug fixes.
 
