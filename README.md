@@ -1,6 +1,10 @@
 # ROCKNIX Control Enhanced
 
-This fork extends the original ROCKNIX Control plugin with additional quality-of-life improvements, bug fixes, and per-game performance tuning features.
+## Credits
+
+This project is based on the original ROCKNIX Control plugin created by <original author's name>. All credit for the original project belongs to the original author and contributors.
+
+This fork focuses on additional enhancements, including per-game governor support, fan control improvements, UI refinements, and various bug fixes.
 
 # Fan curve improvements
 
