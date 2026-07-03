@@ -553,17 +553,30 @@ class Plugin:
             if not preset:
                 decky.logger.info(f"apply_preset: preset '{name}' not found. Available: {list(data['presets'].keys())}")
                 return False
+
             for policy in CPU_POLICIES:
                 max_key = f"cpu_policy{policy}_max"
                 min_key = f"cpu_policy{policy}_min"
+
                 if max_key in preset:
                     await self.set_cpu_max_freq(policy, preset[max_key])
+
                 if min_key in preset:
                     await self.set_cpu_min_freq(policy, preset[min_key])
+
+            if "cpu_governor" in preset:
+                for policy in CPU_POLICIES:
+                    await self.set_cpu_governor(policy, preset["cpu_governor"])
+
             if "gpu_max" in preset:
                 await self.set_gpu_max_freq(preset["gpu_max"])
+
             if "gpu_min" in preset:
                 await self.set_gpu_min_freq(preset["gpu_min"])
+
+            if "gpu_governor" in preset:
+                await self.set_gpu_governor(preset["gpu_governor"])
+
             if "fan_mode" in preset:
                 if preset["fan_mode"] == "auto":
                     await self._stop_curve_loop()
@@ -571,12 +584,14 @@ class Plugin:
                 elif preset["fan_mode"] == "manual" and preset.get("fan_pwm") is not None:
                     await self._stop_curve_loop()
                     await self.set_fan_speed(preset["fan_pwm"])
+
             if "fan_curve" in preset:
                 curve = preset["fan_curve"]
                 self._fan_curve = {"speeds": curve["speeds"], "temps": curve["temps"]}
                 await _awrite_fan_conf(curve["speeds"], curve["temps"])
                 await _aset_system_setting("cooling.profile", "custom")
                 self._start_curve_loop()
+
             return True
 
     async def get_current_settings(self):
@@ -585,8 +600,18 @@ class Plugin:
             base = CPU_BASE.format(policy)
             settings[f"cpu_policy{policy}_max"] = int(await _aread(os.path.join(base, "scaling_max_freq")) or 0)
             settings[f"cpu_policy{policy}_min"] = int(await _aread(os.path.join(base, "scaling_min_freq")) or 0)
+
+        cpu_governors = []
+        for policy in CPU_POLICIES:
+            base = CPU_BASE.format(policy)
+            governor = await _aread(os.path.join(base, "scaling_governor"))
+            if governor:
+                cpu_governors.append(governor.strip())
+
+        settings["cpu_governor"] = cpu_governors[0] if cpu_governors else ""        
         settings["gpu_max"] = int(await _aread(os.path.join(GPU_BASE, "max_freq")) or 0) if GPU_BASE else 0
         settings["gpu_min"] = int(await _aread(os.path.join(GPU_BASE, "min_freq")) or 0) if GPU_BASE else 0
+        settings["gpu_governor"] = (await _aread(os.path.join(GPU_BASE, "governor")) or "").strip() if GPU_BASE else ""
         if self.fan_hwmon:
             enable = int(await _aread(os.path.join(self.fan_hwmon, "pwm1_enable")) or 0)
             if self._curve_task and not self._curve_task.done():

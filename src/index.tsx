@@ -42,6 +42,9 @@ interface Preset {
   fan_mode: string;
   fan_pwm: number;
   fan_pwm_percent?: number;
+
+  cpu_governor?: string;
+  gpu_governor?: string;
 }
 
 interface CurvePoint { temp: number; speed: number; }
@@ -206,6 +209,12 @@ function Content() {
   const [editName, setEditName] = useState<string>("");
   const [fanPercent, setFanPercent] = useState<string>("--");
 
+  const CPU_GOVERNORS = ["ondemand", "schedutil", "performance", "powersave"];
+  const [presetCpuGovernor, setPresetCpuGovernor] = useState<string>(CPU_GOVERNORS[0]);
+
+  const GPU_GOVERNORS = ["simple_ondemand", "userspace", "performance", "powersave"];
+  const [presetGpuGovernor, setPresetGpuGovernor] = useState<string>(GPU_GOVERNORS[0]);
+
   const [curvePoints, setCurvePoints] = useState<CurvePoint[]>(DEFAULT_FAN_CURVE);
 
   const [runningAppId, setRunningAppId] = useState<number>(state.runningAppId);
@@ -228,6 +237,13 @@ function Content() {
     }
     setCpuMaxFreqs(presetMax);
     setGpuMaxFreqState((preset as any)?.gpu_max ?? gpu.max_freq);
+    setPresetCpuGovernor((preset as any)?.cpu_governor || CPU_GOVERNORS[0]);
+    setPresetGpuGovernor((preset as any)?.gpu_governor || GPU_GOVERNORS[0]);
+    setFanPercent(
+      (preset as any)?.fan_pwm_percent != null
+        ? String((preset as any).fan_pwm_percent)
+        : "--"
+    );
   };
 
   const refreshPresets = async () => {
@@ -251,6 +267,12 @@ function Content() {
     refreshHardware();
     refreshPresets();
     refreshFanCurve();
+    setTimeout(() => {
+      if (state.runningAppId === 0) {
+        applyPreset(state.activePreset).then(() => refreshHardware());
+      }
+    }, 1500);
+  
     const interval = setInterval(() => {
       if (switching) return;  // skip entire tick during profile switch to avoid RPC queue buildup
       if (state.runningAppId !== runningAppIdRef.current) setRunningAppId(state.runningAppId);
@@ -259,15 +281,29 @@ function Content() {
         setTemps((prev) => (prev.cpu === t.cpu && prev.gpu === t.gpu) ? prev : t);
       });
       getCpuInfo().then((cpu) => {
+        setCpuInfo(cpu);
+
         const liveMax: { [key: string]: number } = {};
-        for (const p of Object.keys(cpu)) liveMax[p] = cpu[p]?.max_freq ?? 0;
+        for (const p of Object.keys(cpu)) {
+          liveMax[p] = cpu[p]?.max_freq ?? 0;
+        }
+
         setLiveCpuMax((prev) => {
           const keys = Object.keys(liveMax);
-          if (keys.length === Object.keys(prev).length && keys.every((k) => prev[k] === liveMax[k])) return prev;
+          if (
+            keys.length === Object.keys(prev).length &&
+            keys.every((k) => prev[k] === liveMax[k])
+          ) {
+            return prev;
+          }
           return liveMax;
         });
       });
-      getGpuInfo().then((gpu) => setLiveGpuMax((prev) => (prev === gpu.max_freq ? prev : gpu.max_freq)));
+
+      getGpuInfo().then((gpu) => {
+        setGpuInfo(gpu);
+        setLiveGpuMax((prev) => (prev === gpu.max_freq ? prev : gpu.max_freq));
+      });
       
       getCurrentSettings().then((current) => {
         const value = current.fan_pwm_percent;
@@ -354,6 +390,8 @@ function Content() {
       (current as any)[`cpu_policy${policy}_max`] = cpuMaxFreqs[policy];
     }
     current.gpu_max = gpuMaxFreq;
+    current.cpu_governor = presetCpuGovernor;
+    current.gpu_governor = presetGpuGovernor;
     await savePreset(name, JSON.stringify(current));
     await applyPreset(name);
     setEditMode(false);
@@ -412,7 +450,14 @@ function Content() {
         <PanelSection title={`Playing: ${gameName}`} />
       )}
 
-      <PanelSection title={`Fan: ${fanPercent}%`} />
+      <PanelSection
+        title={`Fan: ${fanPercent}% | C: ${temps.cpu ? `${(temps.cpu / 1000).toFixed(0)}°C` : "--"} | G: ${temps.gpu ? `${(temps.gpu / 1000).toFixed(0)}°C` : "--"}`}
+      >
+        <div style={{ marginLeft: 16, marginTop: -6 }}>
+          <div>CPU Gov: {cpuInfo?.["0"]?.governor ?? "--"}</div>
+          <div>GPU Gov: {gpuInfo?.governor ?? "--"}</div>
+        </div>
+      </PanelSection>
       
       <PanelSection title="Presets">
         <PanelSectionRow>
@@ -456,6 +501,43 @@ function Content() {
             </PanelSectionRow>
           </>
         )}
+      </PanelSection>
+
+      <PanelSection title="Governor">
+        <PanelSectionRow>
+          {(() => {
+            const idx = Math.max(0, CPU_GOVERNORS.indexOf(presetCpuGovernor));
+            return (
+              <SliderField
+                label="CPU Governor"
+                description={CPU_GOVERNORS[idx]}
+                value={idx}
+                min={0}
+                max={CPU_GOVERNORS.length - 1}
+                step={1}
+                disabled={!editMode}
+                onChange={(i) => setPresetCpuGovernor(CPU_GOVERNORS[i])}
+              />
+            );
+          })()}
+        </PanelSectionRow>
+        <PanelSectionRow>
+          {(() => {
+            const idx = Math.max(0, GPU_GOVERNORS.indexOf(presetGpuGovernor));
+            return (
+              <SliderField
+                label="GPU Governor"
+                description={GPU_GOVERNORS[idx]}
+                value={idx}
+                min={0}
+                max={GPU_GOVERNORS.length - 1}
+                step={1}
+                disabled={!editMode}
+                onChange={(i) => setPresetGpuGovernor(GPU_GOVERNORS[i])}
+              />
+            );
+          })()}
+        </PanelSectionRow>
       </PanelSection>
 
       <PanelSection title={`CPU${temps.cpu ? ` (${(temps.cpu / 1000).toFixed(0)}°C)` : ""}`}>
