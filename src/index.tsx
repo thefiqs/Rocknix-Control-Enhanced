@@ -449,16 +449,7 @@ function Content() {
       {runningAppId > 0 && (
         <PanelSection title={`Playing: ${gameName}`} />
       )}
-
-      <PanelSection
-        title={`Fan: ${fanPercent}% | C: ${temps.cpu ? `${(temps.cpu / 1000).toFixed(0)}°C` : "--"} | G: ${temps.gpu ? `${(temps.gpu / 1000).toFixed(0)}°C` : "--"}`}
-      >
-        <div style={{ marginLeft: 16, marginTop: -6 }}>
-          <div>CPU Gov: {cpuInfo?.["0"]?.governor ?? "--"}</div>
-          <div>GPU Gov: {gpuInfo?.governor ?? "--"}</div>
-        </div>
-      </PanelSection>
-      
+    
       <PanelSection title="Presets">
         <PanelSectionRow>
           <DropdownItem
@@ -501,6 +492,15 @@ function Content() {
             </PanelSectionRow>
           </>
         )}
+      </PanelSection>
+
+      <PanelSection
+        title={`Fan: ${fanPercent}% | C: ${temps.cpu ? `${(temps.cpu / 1000).toFixed(0)}°C` : "--"} | G: ${temps.gpu ? `${(temps.gpu / 1000).toFixed(0)}°C` : "--"}`}
+      >
+        <div style={{ marginLeft: 16, marginTop: -6 }}>
+          <div>CPU Gov: {cpuInfo?.["0"]?.governor ?? "--"}</div>
+          <div>GPU Gov: {gpuInfo?.governor ?? "--"}</div>
+        </div>
       </PanelSection>
 
       <PanelSection title="Governor">
